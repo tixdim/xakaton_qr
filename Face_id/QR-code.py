@@ -1,4 +1,5 @@
 import requests
+import datetime
 from PIL import Image
 from pyzbar.pyzbar import decode
 
@@ -15,13 +16,24 @@ def get_data_from_QR(name_img):
     return data_href
 
 
+def comparison(now, expiration):
+    e = expiration.split(".")
+    expiration_day, expiration_month, expiration_year = int(e[0]), int(e[1]), int(e[2])
+    expiration_month = int(expiration.split(".")[1])
+    expiration_year = int(expiration.split(".")[2])
+    if expiration_year > now.year or (expiration_year == now.year and
+                                      (expiration_month > now.month or (expiration_month == now.month
+                                                                        and expiration_day > now.day))):
+        return True
+    return False
+
+
 def get_data_from_json(url, value):
     response = requests.get(url=url, headers=headers)
 
     if response.status_code == 200:
         response = response.json()
-
-        # print(response)
+        now = datetime.datetime.now()
 
         if value == 1:
             unrz = response['unrz']
@@ -39,6 +51,10 @@ def get_data_from_json(url, value):
             expiration = response['expiredAt']
             print(expiration)
 
+            if comparison(now, expiration):
+                return "successfully"
+            return "unsuccessful"
+
         elif value == 2:
             unrz = response['items'][0]['unrz']
             print(unrz)
@@ -55,6 +71,10 @@ def get_data_from_json(url, value):
             expiration = response['items'][0]['expiredAt']
             print(expiration)
 
+            if comparison(now, expiration):
+                return "successfully"
+            return "unsuccessful"
+
         elif value == 3:
             unrz = response['items'][0]['unrz']
             print(unrz)
@@ -70,10 +90,12 @@ def get_data_from_json(url, value):
 
             expiration = response['items'][0]['expiredAt']
             print(expiration)
+
+            if comparison(now, expiration):
+                return "successfully"
+            return "unsuccessful"
     else:
-        print("Oops.. The code is not recognized, try again!")
-        return None
-    print()
+        return "unsuccessful"
 
 
 def get_expiration(data_href):
@@ -90,21 +112,33 @@ def get_expiration(data_href):
         data_url = f"https://www.gosuslugi.ru/api/covid-cert/v3/cert/check/{data_href_1}"
         value = 3
     else:
-        print("Oops.. The code is not recognized, try again!")
-        return None
+        return "unsuccessful"
 
-    get_data_from_json(data_url, value)
+    return get_data_from_json(data_url, value)
 
 
 def main():
     data_href = get_data_from_QR("Ars_2.png")
     expiration = get_expiration(data_href)
+    if expiration == "successfully":
+        print("Congratulations, the QR code is entered into the database")
+    else:
+        print("Oops.. The code is not recognized, try again!")
 
     data_href = get_data_from_QR("Mum_new.png")
     expiration = get_expiration(data_href)
+    if expiration == "successfully":
+        print("Congratulations, the QR code is entered into the database")
+    else:
+        print("Oops.. The code is not recognized, try again!")
 
     data_href = get_data_from_QR("Mum_old.png")
     expiration = get_expiration(data_href)
+    if expiration == "successfully":
+        print("Congratulations, the QR code is entered into the database")
+    else:
+        print("Oops.. The code is not recognized, try again!")
+
 
 
 if __name__ == "__main__":
